@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 vis = ["viser>=0.2.23", "trimesh", "matplotlib", "onnxruntime", "requests"]
+render = ["open3d>=0.19", "pyyaml"]
 demo = ["lingbot-map[vis]"]
 
 [build-system]

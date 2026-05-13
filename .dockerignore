@@ -5,7 +5,6 @@ uploads/
 logs/
 hf_cache/
 torch_cache/
-demo_render/
 example/
 assets/
 lingbot-map_paper.pdf
