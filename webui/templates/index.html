@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% if not checkpoints %}
+<div class="warning">
+  <strong>No checkpoint found.</strong>
+  Drop a <code>.pt</code> file into <code>./checkpoints/</code> (mounted into the container).
+</div>
+{% endif %}
+
+<section class="card">
+  <h2>Run an example scene</h2>
+  {% if examples %}
+  <form method="post" action="/run-example" class="form-grid">
+    <label>Scene
+      <select name="scene" required>
+        {% for s in examples %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Checkpoint
+      <select name="checkpoint" required>
+        {% for c in checkpoints %}<option value="{{ c }}" {% if c == default_checkpoint %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>FPS
+      <input type="number" name="fps" value="10" min="1" max="60" required>
+    </label>
+    <label>Mode
+      <select name="mode">
+        <option value="streaming" selected>streaming (default)</option>
+        <option value="windowed">windowed (&gt;3000 frames)</option>
+      </select>
+    </label>
+    <label>Keyframe interval
+      <input type="text" name="keyframe_interval" value="" placeholder="auto" title="Empty = auto-pick (recommended). 1 = every frame. Higher = sparser KV cache for long sequences.">
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" name="mask_sky" value="true"> Mask sky
+    </label>
+    <button type="submit" {% if not checkpoints %}disabled{% endif %}>Run scene</button>
+  </form>
+  {% else %}
+  <p class="muted">No example scenes found in <code>./example/</code>.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Live RTSP stream</h2>
+  <form method="post" action="/start-rtsp" class="form-grid" id="rtsp-form">
+    <label style="grid-column: 1 / -1;">RTSP URL
+      <input type="text" name="rtsp_url" id="rtsp-url-input" required placeholder="rtsp://user:pass@192.168.1.42:554/stream1">
+    </label>
+    <label>Checkpoint
+      <select name="checkpoint" required>
+        {% for c in checkpoints %}<option value="{{ c }}" {% if c == default_checkpoint %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="row" style="grid-column: 1 / -1;">
+      <button type="submit" {% if not checkpoints %}disabled{% endif %}>Start streaming</button>
+      <button type="button" id="preview-toggle">Preview only</button>
+    </div>
+  </form>
+  <div id="preview-box" style="margin-top: 12px; display: none;">
+    <p class="muted">Live MJPEG from the RTSP source (sanity-check: is the decode clean? is the camera pointing at what you expect?)</p>
+    <img id="preview-img" alt="RTSP preview" style="max-width: 100%; border: 1px solid var(--border); border-radius: 4px; background: #000;">
+  </div>
+  <p class="muted">Phase 1 (scale, ~8 frames) runs once at start; afterwards every incoming frame is appended to the point cloud live. Press <em>Stop streaming</em> in the viser GUI (or the Stop button on the job page) to end.</p>
+  <script>
+  (function() {
+    const btn = document.getElementById("preview-toggle");
+    const box = document.getElementById("preview-box");
+    const img = document.getElementById("preview-img");
+    const inp = document.getElementById("rtsp-url-input");
+    btn.addEventListener("click", function() {
+      const url = inp.value.trim();
+      if (!url) { inp.focus(); return; }
+      if (box.style.display === "none") {
+        img.src = "/preview.mjpg?rtsp_url=" + encodeURIComponent(url) + "&t=" + Date.now();
+        box.style.display = "block";
+        btn.textContent = "Stop preview";
+      } else {
+        img.src = "";  // close the MJPEG connection
+        box.style.display = "none";
+        btn.textContent = "Preview only";
+      }
+    });
+  })();
+  </script>
+</section>
+
+<section class="card">
+  <h2>Upload a video</h2>
+  <form method="post" action="/upload" enctype="multipart/form-data" class="form-grid">
+    <label>Video file
+      <input type="file" name="file" accept="video/*" required>
+    </label>
+    <label>Checkpoint
+      <select name="checkpoint" required>
+        {% for c in checkpoints %}<option value="{{ c }}" {% if c == default_checkpoint %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>FPS (frames to extract per second)
+      <input type="number" name="fps" value="10" min="1" max="60" required>
+    </label>
+    <label>Mode
+      <select name="mode">
+        <option value="streaming" selected>streaming (default)</option>
+        <option value="windowed">windowed (&gt;3000 frames)</option>
+      </select>
+    </label>
+    <label>Keyframe interval
+      <input type="text" name="keyframe_interval" value="" placeholder="auto" title="Empty = auto-pick (recommended). 1 = every frame. Higher = sparser KV cache for long sequences.">
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" name="mask_sky" value="true"> Mask sky
+    </label>
+    <button type="submit" {% if not checkpoints %}disabled{% endif %}>Upload & run</button>
+  </form>
+  <p class="muted">Supported: mp4, mov, mkv, avi, webm, m4v. Uploading replaces any currently-running job.</p>
+</section>
+
+<section class="card">
+  <h2>Jobs <span class="muted">({{ jobs|length }})</span>
+    {% if current_job_id %}
+    <form method="post" action="/stop" style="display:inline">
+      <button class="danger small">Stop current</button>
+    </form>
+    {% endif %}
+  </h2>
+  {% if jobs %}
+  <table class="jobs">
+    <thead><tr><th>ID</th><th>Kind</th><th>Source</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for j in jobs %}
+      <tr>
+        <td><code>{{ j.id }}</code></td>
+        <td>{{ j.kind }}</td>
+        <td class="truncate" title="{{ j.source }}">{{ j.source }}</td>
+        <td><span class="status status-{{ j.status }}">{{ j.status }}</span></td>
+        <td><a href="/job/{{ j.id }}">open →</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No jobs yet.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

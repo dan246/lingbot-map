@@ -1,0 +1,31 @@
+services:
+  lingbot-map:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lingbot-map:latest
+    container_name: lingbot-map
+    restart: unless-stopped
+    ports:
+      - "${WEBUI_PORT:-8000}:8000"
+      - "${VISER_PORT:-8080}:8080"
+    environment:
+      HOST_VISER_PORT: "${VISER_PORT:-8080}"
+      DEFAULT_CHECKPOINT: "lingbot-map-long.pt"
+      OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp|stimeout;5000000"
+    volumes:
+      - ./checkpoints:/app/checkpoints:ro
+      - ./example:/app/example:ro
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./hf_cache:/app/hf_cache
+      - ./torch_cache:/app/torch_cache
+      - ./webui:/app/webui:ro
+    shm_size: "8gb"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Job {{ job.id }} · LingBot-Map{% endblock %}
+{% block content %}
+
+<section class="card">
+  <h2>Job <code>{{ job.id }}</code>
+    <span id="status" class="status status-{{ job.status }}">{{ job.status }}</span>
+  </h2>
+  <dl class="meta">
+    <dt>Kind</dt><dd>{{ job.kind }}</dd>
+    <dt>Source</dt><dd>{{ job.source }}</dd>
+    <dt>Checkpoint</dt><dd>{{ job.checkpoint }}</dd>
+    <dt>FPS</dt><dd>{{ job.fps }}</dd>
+    <dt>Mode</dt><dd>{{ job.mode|default("streaming") }}</dd>
+    <dt>Keyframe interval</dt><dd>{{ job.keyframe_interval if job.keyframe_interval else "auto" }}</dd>
+    <dt>Mask sky</dt><dd>{{ "yes" if job.mask_sky else "no" }}</dd>
+  </dl>
+
+  {% if job.kind == "rtsp" %}
+  <div style="margin: 12px 0;">
+    <p class="muted">Live RTSP preview (independent decode — confirms the raw stream).</p>
+    <img id="job-preview-img"
+         src="/preview.mjpg?rtsp_url={{ job.source | urlencode }}&t={{ job.id }}"
+         alt="RTSP preview" style="max-width: 100%; max-height: 320px; border: 1px solid var(--border); border-radius: 4px; background: #000;">
+  </div>
+  {% endif %}
+
+  <div class="row">
+    <a id="viewer-btn" class="button primary {% if job.status != 'viewer_ready' %}disabled{% endif %}"
+       href="http://localhost:{{ host_vis_port }}" target="_blank" rel="noopener">Open 3D viewer ↗</a>
+    {% if is_current %}
+    <form method="post" action="/stop" style="display:inline">
+      <button class="danger">Stop</button>
+    </form>
+    {% endif %}
+    <a href="/" class="button">Back</a>
+  </div>
+</section>
+
+<section class="card">
+  <h3>Log <span class="muted">(auto-refresh)</span></h3>
+  <pre id="log" class="log">loading…</pre>
+</section>
+
+<script>
+const jobId = "{{ job.id }}";
+async function refresh() {
+  try {
+    const r = await fetch(`/api/job/${jobId}`);
+    if (!r.ok) return;
+    const j = await r.json();
+    const st = document.getElementById("status");
+    st.textContent = j.status;
+    st.className = "status status-" + j.status;
+    document.getElementById("log").textContent = j.log_tail || "(empty)";
+    const btn = document.getElementById("viewer-btn");
+    if (j.status === "viewer_ready") btn.classList.remove("disabled");
+    else btn.classList.add("disabled");
+    // Stop polling once terminal
+    if (["ended", "failed", "stopped"].includes(j.status)) {
+      clearInterval(timer);
+    }
+  } catch (e) { /* ignore */ }
+}
+const timer = setInterval(refresh, 1500);
+refresh();
+</script>
+{% endblock %}

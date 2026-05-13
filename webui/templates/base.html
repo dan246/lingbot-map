@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LingBot-Map{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">LingBot-Map</a>
+    <nav>
+      <a href="/" class="nav-link">Home</a>
+      <a href="http://localhost:{{ host_vis_port }}" target="_blank" rel="noopener" class="nav-link viewer-link">3D Viewer ↗</a>
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
+    <small>LingBot-Map · GCT Streaming 3D Reconstruction</small>
+  </footer>
+</body>
+</html>

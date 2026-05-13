@@ -11,3 +11,14 @@ CLAUDE.md
 .claude/
 .agents/
 skyseg.onnx
+
+# Runtime data created by the docker-compose stack — never commit
+checkpoints/
+uploads/
+logs/
+hf_cache/
+torch_cache/
+
+# Screenshots / scratch
+截圖*.png
+*.scratch.*
