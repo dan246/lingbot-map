@@ -8,6 +8,42 @@
 </div>
 {% endif %}
 
+{% macro demo_advanced() %}
+<details class="advanced">
+  <summary>Advanced (demo.py flags) — leave empty for defaults</summary>
+  <div class="form-grid">
+    <label>image_size <input type="text" name="image_size" placeholder="518"></label>
+    <label>patch_size <input type="text" name="patch_size" placeholder="14"></label>
+    <label>max_frame_num <input type="text" name="max_frame_num" placeholder="1024"></label>
+    <label>num_scale_frames <input type="text" name="num_scale_frames" placeholder="8"></label>
+    <label>kv_cache_sliding_window <input type="text" name="kv_cache_sliding_window" placeholder="auto"></label>
+    <label>camera_num_iterations <input type="text" name="camera_num_iterations" placeholder="4"></label>
+    <label>first_k <input type="text" name="first_k" placeholder=""></label>
+    <label>stride <input type="text" name="stride" placeholder=""></label>
+    <label>window_size <input type="text" name="window_size" placeholder="(windowed)"></label>
+    <label>overlap_size <input type="text" name="overlap_size" placeholder=""></label>
+    <label>overlap_keyframes <input type="text" name="overlap_keyframes" placeholder=""></label>
+    <label>conf_threshold <input type="text" name="conf_threshold" placeholder=""></label>
+    <label>downsample_factor <input type="text" name="downsample_factor" placeholder=""></label>
+    <label>point_size <input type="text" name="point_size" placeholder=""></label>
+    <label>offload_to_cpu
+      <select name="offload_to_cpu">
+        <option value="">default</option>
+        <option value="yes">--offload_to_cpu</option>
+        <option value="no">--no-offload_to_cpu</option>
+      </select>
+    </label>
+    <label>export_preprocessed <input type="text" name="export_preprocessed" placeholder="(path)"></label>
+    <label class="checkbox"><input type="checkbox" name="compile" value="true"> compile (torch.compile)</label>
+    <label class="checkbox"><input type="checkbox" name="enable_3d_rope" value="true"> enable_3d_rope</label>
+    <label class="checkbox"><input type="checkbox" name="rotate_clockwise_90" value="true"> rotate_clockwise_90</label>
+    <label style="grid-column: 1 / -1;">Extra args (passed verbatim, shlex-split)
+      <input type="text" name="extra_args" placeholder="--some_flag value --other_flag">
+    </label>
+  </div>
+</details>
+{% endmacro %}
+
 <section class="card">
   <h2>Run an example scene</h2>
   {% if examples %}
@@ -32,11 +68,12 @@
       </select>
     </label>
     <label>Keyframe interval
-      <input type="text" name="keyframe_interval" value="" placeholder="auto" title="Empty = auto-pick (recommended). 1 = every frame. Higher = sparser KV cache for long sequences.">
+      <input type="text" name="keyframe_interval" value="" placeholder="auto" title="Empty = auto-pick. 1 = every frame.">
     </label>
     <label class="checkbox">
       <input type="checkbox" name="mask_sky" value="true"> Mask sky
     </label>
+    <div style="grid-column: 1 / -1;">{{ demo_advanced() }}</div>
     <button type="submit" {% if not checkpoints %}disabled{% endif %}>Run scene</button>
   </form>
   {% else %}
@@ -55,6 +92,25 @@
         {% for c in checkpoints %}<option value="{{ c }}" {% if c == default_checkpoint %}selected{% endif %}>{{ c }}</option>{% endfor %}
       </select>
     </label>
+    <details class="advanced" style="grid-column: 1 / -1;">
+      <summary>Advanced (live_rtsp.py flags) — leave empty for defaults</summary>
+      <div class="form-grid">
+        <label>image_size <input type="text" name="image_size" placeholder="518"></label>
+        <label>patch_size <input type="text" name="patch_size" placeholder="14"></label>
+        <label>num_scale_frames <input type="text" name="num_scale_frames" placeholder="8"></label>
+        <label>kv_cache_sliding_window <input type="text" name="kv_cache_sliding_window" placeholder="16"></label>
+        <label>max_frame_num <input type="text" name="max_frame_num" placeholder="1024"></label>
+        <label>camera_num_iterations <input type="text" name="camera_num_iterations" placeholder="4"></label>
+        <label>max_frames (cap, 0=∞) <input type="text" name="max_frames" placeholder="0"></label>
+        <label>max_points_total <input type="text" name="max_points_total" placeholder="5000000"></label>
+        <label>max_points_per_frame <input type="text" name="max_points_per_frame" placeholder="1500"></label>
+        <label>frustum_every <input type="text" name="frustum_every" placeholder="5"></label>
+        <label>warmup_seconds <input type="text" name="warmup_seconds" placeholder="2.0"></label>
+        <label style="grid-column: 1 / -1;">Extra args (shlex-split)
+          <input type="text" name="extra_args" placeholder="--some_flag value">
+        </label>
+      </div>
+    </details>
     <div class="row" style="grid-column: 1 / -1;">
       <button type="submit" {% if not checkpoints %}disabled{% endif %}>Start streaming</button>
       <button type="button" id="preview-toggle">Preview only</button>
@@ -79,7 +135,7 @@
         box.style.display = "block";
         btn.textContent = "Stop preview";
       } else {
-        img.src = "";  // close the MJPEG connection
+        img.src = "";
         box.style.display = "none";
         btn.textContent = "Preview only";
       }
@@ -109,12 +165,13 @@
       </select>
     </label>
     <label>Keyframe interval
-      <input type="text" name="keyframe_interval" value="" placeholder="auto" title="Empty = auto-pick (recommended). 1 = every frame. Higher = sparser KV cache for long sequences.">
+      <input type="text" name="keyframe_interval" value="" placeholder="auto">
     </label>
     <label class="checkbox">
       <input type="checkbox" name="mask_sky" value="true"> Mask sky
     </label>
-    <button type="submit" {% if not checkpoints %}disabled{% endif %}>Upload & run</button>
+    <div style="grid-column: 1 / -1;">{{ demo_advanced() }}</div>
+    <button type="submit" {% if not checkpoints %}disabled{% endif %}>Upload &amp; run</button>
   </form>
   <p class="muted">Supported: mp4, mov, mkv, avi, webm, m4v. Uploading replaces any currently-running job.</p>
 </section>
